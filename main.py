@@ -27,11 +27,10 @@ response = requests.get(image_url, headers=headers, stream=True)
 response.raise_for_status()
 
 with open(image_path, 'wb') as f:
-    for chunk in response.iter_content(chunk_size=8192):
+    for chunk in response.iter_content(chunk_size=8192):  #Download your image from internet dynamically
         f.write(chunk)
 
-# Load the image here
-image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE) # Load the image in grayscale
+image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE) # Loading the image in grayscale
 
 # Optional Noise Reduction
 # sigma_est = estimate_sigma(image, multichannel=False)  # Estimate noise standard deviation
@@ -46,69 +45,77 @@ def enhance_image(values, image, method='clahe'):
     if method == 'clahe':
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         enhanced = clahe.apply(enhanced)
-    # Add other enhancement methods here if needed (e.g., unsharp masking)
 
     return enhanced
 
-# Fitness Functions
-def fitness_entropy(values):
+# Fitness Functions : Each of this fitness function will say the how good the image enhancement is
+def fitness_entropy(values): # Computing the entropy of the histogram
+    # Goal : MAximize the entropy i.e. better contrast and detail
+
     values = np.array(values).reshape(-1, 2)
     fitness_values = []
     for p in values:
-        enhanced = enhance_image(p, image) # image is now accessible
+        enhanced = enhance_image(p, image)
         hist = cv2.calcHist([enhanced], [0], None, [256], [0, 256])
         hist = hist / hist.sum()
         entropy = -np.sum(hist * np.log2(hist + 1e-10))
-        fitness_values.append(-entropy)  # Negative entropy for maximization
+        fitness_values.append(-entropy)  #Negating the entropy for maximization
     return np.array(fitness_values)
 
-def fitness_variance(values):
+def fitness_variance(values): # Computing the variance of the image by spreading of intensities of the pixels
+    # Goal : Maximize the variance i.e. more varierty in pixel values
+
     values = np.array(values).reshape(-1, 2)
     fitness_values = []
     for p in values:
         enhanced = enhance_image(p, image)
         variance = np.var(enhanced)
-        fitness_values.append(-variance)  # Negative variance for maximization
+        fitness_values.append(-variance)  # Negating the variance for maximization
     return np.array(fitness_values)
 
-def fitness_ssim(values):
+def fitness_ssim(values): # Compouting the SSIM score between the original and enhanced images
+    # Goal : Maximize the SSIM score i.e. preserve the structure and edges well
+
     values = np.array(values).reshape(-1, 2)
     fitness_values = []
     for p in values:
         enhanced = enhance_image(p, image)
         ssim_score = ssim(img_as_float(image), img_as_float(enhanced), data_range=255)
-        fitness_values.append(-ssim_score)  # Negative SSIM for maximization
+        fitness_values.append(-ssim_score)  # Negating the SSIM for maximization
     return np.array(fitness_values)
 
-def fitness_psnr(values):  # New fitness function for PSNR
+def fitness_psnr(values):  # Computing the PSNR score
+    # Goal : Maximize the PSNR score i.e. better quality and less distortion
+
     values = np.array(values).reshape(-1, 2)
     fitness_values = []
     for p in values:
         enhanced = enhance_image(p, image)
         psnr_score = psnr(img_as_float(image), img_as_float(enhanced), data_range=255)
-        fitness_values.append(-psnr_score)  # Negative PSNR for maximization
+        fitness_values.append(-psnr_score)  # Negating the PSNR for maximization
     return np.array(fitness_values)
 
-#PSO Optimization
-fitness_function = fitness_ssim  # Select desired fitness function
-options = {'c1': 2.0, 'c2': 2.0, 'w': 0.7}  # Adjust PSO parameters
-bounds = ([0.5, -50], [3.0, 50])
-n_particles = 50  # Increase number of particles
+#PSO Optimization Code
+
+fitness_function = fitness_ssim  # Select desired fitness function and i have chosen SSIM
+options = {'c1': 2.0, 'c2': 2.0, 'w': 0.7}  # Adjust PSO parameters where c1 and c2 are cognitive and social parameters, w is inertia weight
+bounds = ([0.5, -50], [3.0, 50]) # These are limits for alpha and beta 
+n_particles = 50  # Increase number of particles or the no. of solutions to move around
 iters = 100  # Increase iterations
 
-optimizer = ps.single.GlobalBestPSO(
+optimizer = ps.single.GlobalBestPSO(  # classic PSO where all the particles communicate globally
     n_particles=n_particles, dimensions=2, options=options, bounds=bounds
 )
-best_cost, best_pos = optimizer.optimize(fitness_function, iters=iters)
-best_values = best_pos  # Use the position as best_values
+best_cost, best_pos = optimizer.optimize(fitness_function, iters=iters)  # the optimizer() find the best (alpha, beta) such that it maximizes SSIM
+best_values = best_pos  
 
 #Enhancement and Evaluation
 final_image = enhance_image(best_values, image)
 
 ssim_score = ssim(img_as_float(image), img_as_float(final_image), data_range=255)
 psnr_score = psnr(img_as_float(image), img_as_float(final_image), data_range=255)
-print(f"SSIM Score: {ssim_score}") # Structural Similarity Index Measure
-print(f"PSNR Score: {psnr_score}") # Peak Signal-to-Noise Ratio
+print(f"SSIM Score: {ssim_score}")
+print(f"PSNR Score: {psnr_score}")
 
 # Display and Save Results
 plt.figure(figsize=(10, 5))
