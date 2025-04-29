@@ -42,7 +42,7 @@ def enhance_image(values, image, method='clahe'):
 
 # Fitness Functions : Each of this fitness function will say the how good the image enhancement is
 def fitness_entropy(values): # Computing the entropy of the histogram
-    # Goal : MAximize the entropy i.e. better contrast and detail
+    # Goal : Maximize the entropy i.e. better contrast and detail
 
     values = np.array(values).reshape(-1, 2)
     fitness_values = []
