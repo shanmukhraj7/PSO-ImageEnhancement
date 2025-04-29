@@ -3,16 +3,13 @@
 # !pip install matplotlib
 # !pip install scikit-image
 
-
-
-
-
+ 
 import cv2
 import numpy as np
 import pyswarms as ps
 import matplotlib.pyplot as plt
 from skimage.metrics import structural_similarity as ssim, peak_signal_noise_ratio as psnr
-from skimage import img_as_float, io
+from skimage import img_as_float, io   
 from skimage.restoration import denoise_nl_means, estimate_sigma
 from skimage.util import random_noise
 import requests
@@ -31,11 +28,6 @@ with open(image_path, 'wb') as f:
         f.write(chunk)
 
 image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE) # Loading the image in grayscale
-
-# Optional Noise Reduction
-# sigma_est = estimate_sigma(image, multichannel=False)  # Estimate noise standard deviation
-# image = denoise_nl_means(image, h=1.15 * sigma_est, fast_mode=True, patch_size=5, patch_distance=3, multichannel=False)
-
 
 # Enhancement Function
 def enhance_image(values, image, method='clahe'):
